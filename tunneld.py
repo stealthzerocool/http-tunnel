@@ -1,13 +1,23 @@
 #!/usr/bin/env python
-from http.server import BaseHTTPRequestHandler,HTTPServer 
+from http.server import BaseHTTPRequestHandler,HTTPServer
 import socket, select
 import cgi
 import argparse
 
+def byte_dict_to_str_dict(di):
+    #used to adapt the dictionnary from cgi.parse_qs from byte to string, hence the inner list conversion
+    #be careful with this function, it removes double items from dictionnary
+    for key in di:
+        di[key] = [di[key][0].decode()]
+        di[k.decode()] = di.pop(key)
+    return di
+
+
+
 class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     sockets = {}
-    BUFFER = 1024 * 50 
+    BUFFER = 1024 * 50
     SOCKET_TIMEOUT = 50
 
     def _get_connection_id(self):
@@ -32,10 +42,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         if s:
             # check if the socket is ready to be read
             to_reads, to_writes, in_errors = select.select([s], [], [], 5)
-            if len(to_reads) > 0: 
+            if len(to_reads) > 0:
                 to_read_socket = to_reads[0]
                 try:
-                    print("Getting data from target address") 
+                    print("Getting data from target address")
                     data = to_read_socket.recv(self.BUFFER)
                     print(data)
                     self.send_response(200)
@@ -43,10 +53,10 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
                     if data:
                         self.wfile.write(data)
                 except socket.error as ex:
-                    print('Error getting data from target socket: %s' % ex)  
+                    print('Error getting data from target socket: %s' % ex)
                     self.send_response(503)
                     self.end_headers()
-            else: 
+            else:
                 print('No content available from socket')
                 self.send_response(204) # no content had be retrieved
                 self.end_headers()
@@ -58,11 +68,12 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """POST: Create TCP Connection to the TargetAddress"""
-        id = self._get_connection_id() 
+        id = self._get_connection_id()
         print('Initializing connection with ID %s' % id)
-        length = int(self.headers.getheader('content-length'))
+        length = int(self.headers.get('content-length'))
         req_data = self.rfile.read(length)
-        params = cgi.parse_qs(req_data, keep_blank_values=1) 
+        params = byte_dict_to_str_dict(cgi.parse_qs(req_data, keep_blank_values=1))
+        print(params)
         target_host = params['host'][0]
         target_port = int(params['port'][0])
 
@@ -75,7 +86,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         #save socket reference
         self.sockets[id] = s
-        try: 
+        try:
             self.send_response(200)
             self.end_headers()
         except socket.error as e:
@@ -90,31 +101,31 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             self.send_response(400)
             self.end_headers()
             return
-        length = int(self.headers.getheader('content-length'))
-        data = cgi.parse_qs(self.rfile.read(length), keep_blank_values=1)['data'][0] 
+        length = int(self.headers.get('content-length'))
+        data = byte_dict_to_str_dict(cgi.parse_qs(self.rfile.read(length), keep_blank_values=1)['data'][0])
 
         # check if the socket is ready to write
         to_reads, to_writes, in_errors = select.select([], [s], [], 5)
-        if len(to_writes) > 0: 
+        if len(to_writes) > 0:
             print('Sending data .... %s' % data)
             to_write_socket = to_writes[0]
-            try: 
+            try:
                 to_write_socket.sendall(data)
                 self.send_response(200)
             except socket.error as ex:
-                print('Error sending data from target socket: %s' % ex)  
+                print('Error sending data from target socket: %s' % ex)
                 self.send_response(503)
         else:
             print('Socket is not ready to write')
             self.send_response(504)
         self.end_headers()
 
-    def do_DELETE(self): 
+    def do_DELETE(self):
         self._close_socket()
         self.send_response(200)
         self.end_headers()
 
-def run_server(port, server_class=HTTPServer, handler_class=ProxyRequestHandler): 
+def run_server(port, server_class=HTTPServer, handler_class=ProxyRequestHandler):
     server_address = ('', port)
     httpd = server_class(server_address, handler_class)
     httpd.serve_forever()
