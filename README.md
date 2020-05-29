@@ -49,8 +49,21 @@ To connect to irc server using the tunnel:
     # send irc NICK command to the connection and see the response back from
     the irc server
     NICK abc
+    
+### To-Do list:
+
+* ~~Migrating from Python 2.7 to Python 3~~ Done !
+* Implement HTTPS
+* Implement other protocols
+* Make the http-tunnel act as a proxy for the client
+* Patching bugs 
+
+### Requirements
+
+The following Python modules are required: `http.client`, `urllib`, `argparse`, `threading`. They can by installed through pip.
+The server can be run without special privileges but the client need root/admin privileges to run.
 
 ## Credit: 
 
-This project was inspired by [supertunnel
-project](https://code.google.com/p/supertunnel/)
+This project was forked from the inactive repo [khuevu/http-tunnel](https://github.com/khuevu/http-tunnel) and inspired by [supertunnel
+project](https://code.google.com/p/supertunnel/).
