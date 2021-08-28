@@ -3,13 +3,15 @@ from http.server import BaseHTTPRequestHandler,HTTPServer
 import socket, select
 import cgi
 import argparse
+import urllib.parse
 
 def byte_dict_to_str_dict(di):
-    #used to adapt the dictionnary from cgi.parse_qs from byte to string, hence the inner list conversion
+    #used to adapt the dictionnary from urllib.parse.parse_qs from byte to string, hence the inner list conversion
     #be careful with this function, it removes double items from dictionnary
+    print(di)
     for key in di:
         di[key] = [di[key][0].decode()]
-        di[k.decode()] = di.pop(key)
+        di[key.decode()] = di.pop(key)
     return di
 
 
@@ -72,7 +74,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         print('Initializing connection with ID %s' % id)
         length = int(self.headers.get('content-length'))
         req_data = self.rfile.read(length)
-        params = byte_dict_to_str_dict(cgi.parse_qs(req_data, keep_blank_values=1))
+        params = byte_dict_to_str_dict(urllib.parse.parse_qs(req_data, keep_blank_values=1))
         print(params)
         target_host = params['host'][0]
         target_port = int(params['port'][0])
@@ -102,7 +104,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         length = int(self.headers.get('content-length'))
-        data = byte_dict_to_str_dict(cgi.parse_qs(self.rfile.read(length), keep_blank_values=1)['data'][0])
+        data = byte_dict_to_str_dict(urllib.parse.parse_qs(self.rfile.read(length), keep_blank_values=1)['data'][0])
 
         # check if the socket is ready to write
         to_reads, to_writes, in_errors = select.select([], [s], [], 5)
