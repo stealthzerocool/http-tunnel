@@ -56,7 +56,7 @@ To connect to irc server using the tunnel:
 * Implement HTTPS
 * Implement other protocols
 * Make the http-tunnel act as a proxy for the client
-* Patching bugs 
+* ~~Patching bugs~~
 
 ### Requirements
 

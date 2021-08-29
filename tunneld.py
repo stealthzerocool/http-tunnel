@@ -1,18 +1,17 @@
 #!/usr/bin/env python
 from http.server import BaseHTTPRequestHandler,HTTPServer
 import socket, select
-import cgi
 import argparse
 import urllib.parse
 
 def byte_dict_to_str_dict(di):
     #used to adapt the dictionnary from urllib.parse.parse_qs from byte to string, hence the inner list conversion
     #be careful with this function, it removes double items from dictionnary
-    print(di)
+    di2 = {}
     for key in di:
-        di[key] = [di[key][0].decode()]
-        di[key.decode()] = di.pop(key)
-    return di
+        di2[key.decode()] = [di[key][0].decode()]
+    del di
+    return di2
 
 
 
